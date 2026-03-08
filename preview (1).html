@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NATO PACOM TACTICAL ARCHIVE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+
+        :root {
+            --bg-base: #03070d;
+            --bg-panel: #0a1526;
+            --text-main: #a9bcdc;
+            --text-bright: #e6f0ff;
+            --accent-cyan: #00d2ff;
+            --accent-blue: #1e56a0;
+            --warning: #ff2a2a;
+            
+            /* 세력별 식별 컬러 */
+            --soviet: #ff3b3b;   
+            --nato: #00d2ff;     
+            --neutral: #00e676;  
+            --cult: #d63031;     
+            --indep: #ffa502;    
+        }
+
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-blue); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+        
+        ::selection { background: var(--accent-cyan); color: #000; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* CRT 모니터 스캔라인 오버레이 */
+        body::after {
+            content: " "; display: block; position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99990; background-size: 100% 4px, 6px 100%;
+            pointer-events: none; opacity: 0.6;
+        }
+
+        .mono-font { font-family: 'Share Tech Mono', monospace; }
+        h1, h2, h3, h4, .tab-btn, .access-btn { text-transform: uppercase; letter-spacing: 1.5px; }
+
+        /* ================= 인트로(Access) 화면 ================= */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #010306; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+            transition: opacity 0.8s cubic-bezier(0.86, 0, 0.07, 1);
+        }
+
+        .mil-emblem {
+            font-size: 5rem; color: var(--accent-cyan); margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.5); animation: pulse-glow 2s infinite;
+        }
+
+        .system-text {
+            color: var(--accent-cyan); text-align: center;
+            line-height: 1.8; margin-bottom: 40px; font-size: 1.1rem;
+            min-height: 150px; /* 타이핑 중 레이아웃 흔들림 방지 */
+        }
+        .system-text p { margin: 5px 0; transition: opacity 0.3s; }
+
+        .access-btn {
+            display: none; /* 스크립트로 제어 */
+            background: rgba(0, 210, 255, 0.05); color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan); padding: 12px 50px; font-size: 1.2rem;
+            cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+        }
+
+        .access-btn:hover {
+            background: var(--accent-cyan); color: var(--bg-base);
+            box-shadow: 0 0 20px var(--accent-cyan); transform: scale(1.05);
+        }
+
+        /* 깔끔한 로딩 텍스트 및 바 */
+        #decrypt-text { 
+            display: none; color: var(--accent-cyan); font-size: 1.2rem; margin-top: 20px;
+            letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+        
+        #decrypt-bar-container {
+            display: none; width: 350px; height: 6px;
+            background: #111; border: 1px solid var(--accent-cyan); margin-top: 15px; position: relative;
+        }
+        #decrypt-bar {
+            width: 0%; height: 100%; background: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan);
+            transition: width 1.2s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 15px rgba(0, 210, 255, 0.4); transform: scale(1); }
+            50% { text-shadow: 0 0 30px rgba(0, 210, 255, 0.8); transform: scale(1.05); }
+        }
+
+        /* 채유리 전용 글리치 애니메이션 (로딩창에서는 제거됨) */
+        .glitch-anim {
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+            color: var(--warning) !important; text-shadow: 2px 2px var(--accent-cyan), -2px -2px #ff00ff;
+        }
+        @keyframes glitch-skew {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* ================= 메인 컨테이너 ================= */
+        #main-container {
+            display: none; max-width: 1400px; margin: 0 auto; padding: 40px 30px;
+        }
+
+        header {
+            border-bottom: 2px solid var(--accent-blue); padding-bottom: 20px; margin-bottom: 40px;
+            display: flex; justify-content: space-between; align-items: flex-end; animation: slideDown 0.8s ease-out;
+        }
+        @keyframes slideDown { from { opacity:0; transform: translateY(-20px);} to { opacity:1; transform: translateY(0);} }
+
+        .header-titles h1 { color: var(--text-bright); font-size: 2.2rem; margin: 0 0 5px 0; text-shadow: 0 0 15px rgba(230, 240, 255, 0.3); }
+        .header-titles p { margin: 0; color: var(--accent-cyan); font-size: 1rem; }
+        .header-meta { text-align: right; font-size: 0.85rem; color: #5d7ca6; line-height: 1.4; }
+
+        /* 네비게이션 */
+        nav { display: flex; gap: 15px; margin-bottom: 40px; }
+        .tab-btn {
+            background: var(--bg-panel); color: #5d7ca6; border: 1px solid #1e3a5f; padding: 12px 25px;
+            cursor: pointer; font-size: 0.95rem; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .tab-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.2), transparent); transition: left 0.5s;
+        }
+        .tab-btn:hover::before { left: 100%; }
+        .tab-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 15px rgba(0,210,255,0.2); transform: translateY(-2px);}
+        .tab-btn.active { background: rgba(0, 210, 255, 0.1); color: var(--accent-cyan); border-bottom: 3px solid var(--accent-cyan); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stagger-item { opacity: 0; transform: translateY(20px); }
+        .tab-content.active .stagger-item { animation: slideUpFade 0.5s ease-out forwards; }
+        @keyframes slideUpFade { to { opacity: 1; transform: translateY(0); } }
+
+        /* ================= 연표 ================= */
+        .timeline-container { position: relative; padding: 20px 0; margin-left: 20px; border-left: 2px solid var(--accent-blue); }
+        .timeline-item { position: relative; padding-left: 40px; margin-bottom: 40px; cursor: default;}
+        .timeline-item::before {
+            content: ''; position: absolute; left: -9px; top: 5px; width: 14px; height: 14px;
+            background: var(--bg-base); border: 2px solid var(--accent-blue); border-radius: 50%; transition: 0.3s;
+        }
+        .timeline-year { font-size: 1.5rem; color: var(--accent-blue); margin: 0 0 5px 0; transition: color 0.3s; }
+        .timeline-content {
+            background: var(--bg-panel); border: 1px solid #1e3a5f; padding: 20px; border-radius: 4px;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; z-index: 1;
+        }
+        .timeline-content h3 { margin: 0 0 10px 0; color: var(--text-bright); font-size: 1.1rem;}
+        .timeline-content p { margin: 0; line-height: 1.6; color: var(--text-main); font-size: 0.95rem; }
+        .timeline-item:hover::before { border-color: var(--accent-cyan); background: var(--accent-cyan); box-shadow: 0 0 15px var(--accent-cyan); }
+        .timeline-item:hover .timeline-year { color: var(--accent-cyan); text-shadow: 0 0 10px var(--accent-cyan); }
+        .timeline-item:hover .timeline-content {
+            transform: translateX(15px); border-color: var(--accent-cyan);
+            box-shadow: 0 10px 25px -5px rgba(0, 210, 255, 0.2); background: #0c1a30;
+        }
+
+        /* ================= 세력 데이터 ================= */
+        .intel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
+        .intel-card {
+            background: var(--bg-panel); border: 1px solid #1e3a5f; padding: 25px; position: relative;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .intel-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; transition: width 0.3s ease; }
+        .faction-nato { --theme-color: var(--nato); }
+        .faction-soviet { --theme-color: var(--soviet); }
+        .faction-neutral { --theme-color: var(--neutral); }
+        .faction-cult { --theme-color: var(--cult); }
+        .faction-indep { --theme-color: var(--indep); }
+        .intel-card::before { background: var(--theme-color); }
+        .intel-card h2 { margin: 0 0 15px 0; font-size: 1.4rem; color: var(--theme-color); text-shadow: 0 0 10px transparent; transition: 0.3s;}
+        .intel-card:hover { transform: translateY(-10px); border-color: var(--theme-color); box-shadow: 0 15px 30px -10px var(--theme-color), inset 0 0 20px rgba(0,0,0,0.5); }
+        .intel-card:hover h2 { text-shadow: 0 0 15px var(--theme-color); }
+        .intel-card p { line-height: 1.7; font-size: 0.95rem; margin-bottom: 15px;}
+        .intel-card ul { padding-left: 20px; margin: 0; font-size: 0.9rem;}
+        .intel-card li { margin-bottom: 8px; color: #8ea8c3;}
+
+        /* ================= 캐릭터 파일 ================= */
+        .dossier-section { margin-bottom: 60px; background: rgba(10, 21, 38, 0.3); border: 1px solid #152c4d; padding: 30px; border-radius: 4px; }
+        .dossier-section-title { margin: 0 0 30px 0; padding-bottom: 10px; border-bottom: 1px solid #1e3a5f; font-size: 1.5rem; }
+        .border-nato { --theme-color: var(--nato); border-top: 3px solid var(--theme-color); }
+        .border-soviet { --theme-color: var(--soviet); border-top: 3px solid var(--theme-color); }
+        .border-neutral { --theme-color: var(--neutral); border-top: 3px solid var(--theme-color); }
+        .border-cult { --theme-color: var(--cult); border-top: 3px solid var(--theme-color); }
+        .border-indep { --theme-color: var(--indep); border-top: 3px solid var(--theme-color); }
+        .text-theme { color: var(--theme-color); text-shadow: 0 0 10px rgba(0,0,0,0); transition: 0.3s; }
+        .dossier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
+        
+        .dossier-card {
+            background: var(--bg-base); border: 1px solid #1e3a5f; padding: 20px; position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: default;
+        }
+        .dossier-card:hover { transform: translateY(-8px) scale(1.02); border-color: var(--theme-color); box-shadow: 0 15px 30px -10px var(--theme-color), inset 0 0 30px rgba(0,0,0,0.8); z-index: 10; }
+        .dossier-card:hover .text-theme { text-shadow: 0 0 15px var(--theme-color); }
+        .dossier-card:hover .dossier-portrait img { transform: scale(1.15); filter: contrast(1.1) brightness(1.2); }
+        .dossier-card:hover .dossier-portrait::before {
+            content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 20%;
+            background: linear-gradient(to bottom, transparent, var(--theme-color), transparent);
+            opacity: 0.5; animation: scan 1.5s linear infinite; z-index: 2;
+        }
+        @keyframes scan { 0% { top: -20%; } 100% { top: 100%; } }
+
+        .dossier-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #334e6e; padding-bottom: 10px; margin-bottom: 15px; }
+        .dossier-header h3 { margin: 0; font-size: 1.3rem; }
+        .dossier-code { font-size: 0.8rem; background: #152c4d; padding: 2px 6px; border-radius: 3px; color:#fff;}
+        .dossier-main { display: flex; gap: 15px; margin-bottom: 10px; }
+        .dossier-portrait { width: 105px; height: 130px; flex-shrink: 0; border: 1px solid #334e6e; background: #02060d; position: relative; overflow: hidden; transition: border-color 0.3s; }
+        .dossier-card:hover .dossier-portrait { border-color: var(--theme-color); box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+        .dossier-portrait::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(10, 21, 38, 0) 50%, rgba(10, 21, 38, 0.4) 50%); background-size: 100% 4px; pointer-events: none; z-index: 1; }
+        .dossier-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease, filter 0.5s ease; filter: grayscale(20%); }
+
+        .dossier-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+        .data-row { margin-bottom: 8px; font-size: 0.9rem; display: flex; }
+        .data-label { width: 70px; color: #5d7ca6; flex-shrink: 0; font-size: 0.8rem; padding-top: 2px;}
+        .data-value { color: var(--text-bright); line-height: 1.4; word-break: keep-all;}
+        .ability-tag { display: inline-block; background: rgba(255, 255, 255, 0.05); border: 1px solid currentColor; padding: 4px 8px; font-size: 0.85rem; margin: 10px 0; font-weight: bold; }
+
+        /* 채유리 에러 특수 연출 (클릭 유도) */
+        .dossier-error { --theme-color: var(--warning); border: 1px dashed var(--theme-color); cursor: pointer; }
+        .dossier-error::after {
+            content: 'CLICK TO ACCESS'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-10deg); color: rgba(255, 42, 42, 0);
+            font-size: 2rem; font-weight: bold; pointer-events: none; white-space: nowrap; transition: 0.3s;
+        }
+        .dossier-error:hover { animation: glitch-skew 0.2s infinite; box-shadow: inset 0 0 50px rgba(255,42,42,0.3); }
+        .dossier-error:hover::after { color: rgba(255, 42, 42, 0.8); text-shadow: 2px 2px #fff, -2px -2px #000; z-index: 99;}
+        .dossier-error .dossier-portrait img { filter: hue-rotate(90deg) contrast(1.5); }
+        .dossier-error:hover .dossier-portrait img { filter: invert(1) hue-rotate(180deg); }
+
+        /* ================= 이스터에그 모달 (채유리 기밀 보고서) ================= */
+        #secret-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+            z-index: 100000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .secret-content {
+            background: #050000; border: 2px solid var(--warning); box-shadow: 0 0 40px rgba(255, 42, 42, 0.4);
+            max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;
+            padding: 40px; position: relative; color: #e0e0e0;
+        }
+        .secret-header { border-bottom: 2px solid var(--warning); padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .secret-header h2 { color: var(--warning); font-size: 1.8rem; margin: 0; letter-spacing: 2px; }
+        .close-btn {
+            background: transparent; color: var(--warning); border: 1px solid var(--warning);
+            font-size: 1.2rem; cursor: pointer; padding: 5px 15px; transition: 0.3s;
+        }
+        .close-btn:hover { background: var(--warning); color: #000; }
+        .redacted { background: #333; color: #333; user-select: none; }
+        .redacted:hover { background: transparent; color: #ff5555; }
+        .report-meta { font-size: 0.9rem; color: #ff8888; margin-bottom: 30px; border-left: 3px solid var(--warning); padding-left: 15px;}
+        .report-body p { line-height: 1.8; margin-bottom: 20px; font-size: 1.05rem; }
+        .report-quote { font-style: italic; color: #fff; background: rgba(255,42,42,0.1); padding: 15px; border-left: 4px solid var(--warning); margin: 20px 0;}
+
+    </style>
+</head>
+<body>
+
+    <!-- 인트로 접속 화면 -->
+    <div id="intro-screen">
+        <div class="mil-emblem mono-font">✹</div>
+        <div class="system-text mono-font" id="type-container">
+            <!-- 자바스크립트로 한 줄씩 타이핑 됨 -->
+        </div>
+        <button class="access-btn mono-font" id="btn-access" onclick="enterArchive()">INITIALIZE ACCESS</button>
+        <div id="decrypt-text" class="mono-font">DECRYPTING ARCHIVE...</div>
+        <div id="decrypt-bar-container"><div id="decrypt-bar"></div></div>
+    </div>
+
+    <!-- 메인 시스템 아카이브 -->
+    <div id="main-container">
+        <header>
+            <div class="header-titles">
+                <h1 class="mono-font">PACOM TACTICAL ARCHIVE</h1>
+                <p class="mono-font">INTELLIGENCE & ENTROPY ENGINE DATA REPOSITORY // 2026</p>
+            </div>
+            <div class="header-meta mono-font">
+                ENCRYPTION: LEVEL 5<br>USER: CMD_STAFF_01<br>STATUS: <span style="color:var(--accent-cyan);">SECURE</span>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="mono-font">
+            <button class="tab-btn active" onclick="switchTab('tab-chronology', this)">CHRONOLOGY (연표)</button>
+            <button class="tab-btn" onclick="switchTab('tab-factions', this)">FACTION INTEL (세력)</button>
+            <button class="tab-btn" onclick="switchTab('tab-personnel', this)">PERSONNEL DOSSIERS (인물)</button>
+        </nav>
+
+        <!-- 연표 탭 -->
+        <section id="tab-chronology" class="tab-content active">
+            <div class="timeline-container">
+                <div class="timeline-item stagger-item" style="animation-delay: 0.1s">
+                    <h2 class="timeline-year mono-font">1946</h2>
+                    <div class="timeline-content"><h3>제2차 세계대전 종전</h3><p>글로벌 패권 구도의 재편 및 냉전 체제 돌입.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.2s">
+                    <h2 class="timeline-year mono-font">1967</h2>
+                    <div class="timeline-content"><h3>소련, 미지의 물질 '안티 엔트로피' 발견</h3><p>소비에트 연방이 엔트로피(무질서도)를 임의로 감소시킬 수 있는 기적의 물질을 발견하여 극비리에 연구 개시.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.3s">
+                    <h2 class="timeline-year mono-font">1986</h2>
+                    <div class="timeline-content"><h3>체르노빌 엔트로피 엔진 붕괴 사고</h3><p>엔진 폭주로 물리법칙이 붕괴되며 <strong>최초의 시간 붕괴 지역</strong> 형성. 내부 관측 불가 현상 발생.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.4s">
+                    <h2 class="timeline-year mono-font">1987</h2>
+                    <div class="timeline-content"><h3>최초의 능력 발현자 보고</h3><p>체르노빌 사고 여파로 일부 인류 체내에서 안티 엔트로피가 생성, 특수 능력을 구사하는 이능력자 등장.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.5s">
+                    <h2 class="timeline-year mono-font">1993</h2>
+                    <div class="timeline-content"><h3>미국 화성 유인 착륙 성공</h3><p>우주 개발 성과 달성. 미·소 간의 안티 엔트로피 기술 및 우주 개발 경쟁 극단화.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.6s">
+                    <h2 class="timeline-year mono-font">1995</h2>
+                    <div class="timeline-content"><h3>유라시아 소비에트 연방 창설</h3><p>기술적 우위를 바탕으로 붕괴 위기를 극복한 소련이 유라시아 공산권 국가들을 통합.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.7s">
+                    <h2 class="timeline-year mono-font">2003</h2>
+                    <div class="timeline-content"><h3>제3차 세계대전 발발</h3><p>이념 대립 및 엔진 확보를 위한 전면전. 안티 엔트로피 시간 무기 및 능력자 전장 대거 투입.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.8s">
+                    <h2 class="timeline-year mono-font">2013</h2>
+                    <div class="timeline-content"><h3>'대붕괴' (The Great Collapse)</h3><p>농도 임계점 돌파. 전 세계 동시다발적으로 시간 붕괴 현상이 발생하며 인류 문명 완전 마비.</p></div>
+                </div>
+                <div class="timeline-item stagger-item" style="animation-delay: 0.9s">
+                    <h2 class="timeline-year mono-font">2026 (PRESENT)</h2>
+                    <div class="timeline-content"><h3>시간 붕괴 약화 및 국지전 재개</h3><p>붕괴 현상 소강상태. 무한한 동력원 '엔트로피 엔진' 확보를 위해 각 생존 세력의 전술 작전 재개.</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 세력 정보 탭 -->
+        <section id="tab-factions" class="tab-content">
+            <div class="intel-grid">
+                <div class="intel-card faction-nato stagger-item" style="animation-delay: 0.1s">
+                    <h2 class="mono-font">[ALLIED] NATO 태평양 통합 사령부</h2>
+                    <p>대붕괴 이후 아시아-태평양 지역에 고립된 나토 사령부 잔존 병력. 지역 민간 생존자를 규합하여 체계적인 군사 기지를 재건했다. 본 데이터베이스의 관리 주체.</p>
+                    <ul><li>분대 단위 팀워크 및 구시대 첨단 기술 연계</li><li>목표: 질서 회복 및 엔트로피 엔진 통제</li></ul>
+                </div>
+                <div class="intel-card faction-soviet stagger-item" style="animation-delay: 0.2s">
+                    <h2 class="mono-font">[HOSTILE] 유라시아 소비에트 연방</h2>
+                    <p>과거 거대 정부였던 유라시아 연방 극동사령부 잔당. 지휘계통 파편화 이후 독자적으로 무력을 행사 중인 가장 위협적인 적대 세력.</p>
+                    <ul><li>압도적 무력투사 및 철저한 내부 통제</li><li>목표: 엔진 독점을 통한 제국 재건</li></ul>
+                </div>
+                <div class="intel-card faction-neutral stagger-item" style="animation-delay: 0.3s">
+                    <h2 class="mono-font">[NEUTRAL] 국제 중립 연구 재단</h2>
+                    <p>대붕괴 이전 UN 직속 '시간연구부'의 후신. 비무장 학술 기관을 표방하며 능력의 본질을 과학적으로 추적하고 있다.</p>
+                    <ul><li>세력 간 분쟁 완전 중립 및 비교전 원칙</li><li>목표: 치명적 위험 능력 통제 및 현상 해석</li></ul>
+                </div>
+                <div class="intel-card faction-cult stagger-item" style="animation-delay: 0.4s">
+                    <h2 class="mono-font">[THREAT] 엔트로픽 교단</h2>
+                    <p>대붕괴를 '신의 축복'으로 규정하고 무질서를 숭배하는 극단주의 광신도 테러 단체. 예측 불가 비대칭 전력 보유.</p>
+                    <ul><li>자살에 가까운 광신적 돌격 및 능력의 파괴적 활용</li><li>목표: 엔진 완전 과부하(2차 붕괴 유도)</li></ul>
+                </div>
+                <div class="intel-card faction-indep stagger-item" style="animation-delay: 0.5s">
+                    <h2 class="mono-font">[UNCLASSIFIED] 무소속 생존자</h2>
+                    <p>특정 체제에 소속되기를 거부하고 황무지를 독자적으로 개척하는 인원들. 변수가 많아 작전 수행 시 요주의 대상.</p>
+                    <ul><li>개인 생존술 및 탐험 능력 극대화</li><li>대응 지침: 적대 행위 없을 시 교전 회피</li></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 인물 파일 탭 -->
+        <section id="tab-personnel" class="tab-content">
+            
+            <div class="dossier-section border-nato stagger-item" style="animation-delay: 0.1s">
+                <h2 class="dossier-section-title text-theme mono-font">ALLIED PERSONNEL // NATO PACOM</h2>
+                <div class="dossier-grid">
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">메아 (MEA)</h3><span class="dossier-code mono-font">ID-E</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/e1.png" alt="메아"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 장교 / 21세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">금발, 벽안, 단신</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 연소 (대상 발화)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">감정 기복이 매우 적고 철저히 쿨한 태도 유지.</div></div>
+                    </div>
+                    
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">리나 (LINA)</h3><span class="dossier-code mono-font">ID-F</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/f1.png" alt="리나"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 특수부대 / 22세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">흑단발, 주황색 동공</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 약점 파악 (구조/심리 스캔)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">냉철한 전술가. 동생인 무소속 '니아' 건에 극도로 예민함.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">에피 (EFFIE)</h3><span class="dossier-code mono-font">ID-G</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/g1.png" alt="에피"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 드론 조종사 / 19세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">은색 중단발, 벽안, 고글</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 기계 조작 (하드웨어 인터페이스)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">과묵하나 분석적임. 작전 중 침착함을 잃지 않음.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">카일라 (KAYLA)</h3><span class="dossier-code mono-font">ID-H</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/h1.png" alt="카일라"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 전투조종사 / 23세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">청록색 장발, 금안, 파일럿복</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 비행 (자체 공중 기동)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">군 규율에 얽매이지 않는 밝은 성격. 항공 전력의 핵심.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dossier-section border-soviet stagger-item" style="animation-delay: 0.2s">
+                <h2 class="dossier-section-title text-theme mono-font">HOSTILE TARGETS // EURASIAN SOVIET</h2>
+                <div class="dossier-grid">
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">율리야 (YULIYA)</h3><span class="dossier-code mono-font">ID-A</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/a1.png" alt="율리야"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 장교 / 21세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">백발, 황안, 단신</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 염동력 (물리 제어)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">오만한 언행을 보이나 직속 상관인 '키로프' 앞에서는 얌전해짐.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">키로프 (KIROV)</h3><span class="dossier-code mono-font">ID-B</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/b1.png" alt="키로프"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 돌격대장 / 25세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">갈색 장발, 적안</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 신체강화 (내구/근력 향상)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">부대원들의 구심점. 부하들에게 모성애를 보임. 최우선 경계 대상.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">툴라 (TULA)</h3><span class="dossier-code mono-font">ID-C</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/c1.png" alt="툴라"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 정치장교 / 24세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">흑발 단발, 적안, 동심원 동공</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 정신 간섭 (인지 조작)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">극도로 차갑고 지배적인 성향. 사상 검증 및 심리전 주도.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">옥시나 (OKSINA)</h3><span class="dossier-code mono-font">ID-D</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/d1.png" alt="옥시나"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 작전사령관 / 23세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">갈색 포니테일, 녹안, 십자가 동공</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 전장 파악 (광역 피아 식별)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">활기차고 호기심이 많음. 해당 능력으로 인해 기습 작전이 불가함.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dossier-section border-neutral stagger-item" style="animation-delay: 0.3s">
+                <h2 class="dossier-section-title text-theme mono-font">NEUTRAL // INTL. RESEARCH FOUNDATION</h2>
+                <div class="dossier-grid">
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">이다 (IDA)</h3><span class="dossier-code mono-font">ID-I</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/i1.png" alt="이다"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 연구박사 / 21세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">연두색 머리/동공, 단신</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 저장 (시간 상태 세이브/로드)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">"~것이다" 어투 사용. 지독한 탐구광이며 항상 노트를 휴대함.</div></div>
+                    </div>
+                    
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">클라라 (CLARA)</h3><span class="dossier-code mono-font">ID-J</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/j1.png" alt="클라라"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 연구 조수 / 22세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">연갈색 단발/동공</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 보존 (엔트로피 정지)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">이다 박사의 돌발 행동 수습 전담. 정중한 태도 유지.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dossier-section border-cult stagger-item" style="animation-delay: 0.4s">
+                <h2 class="dossier-section-title text-theme mono-font">THREAT TARGETS // ENTROPIC CULT</h2>
+                <div class="dossier-grid">
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">세린 (SERIN)</h3><span class="dossier-code mono-font">ID-K</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/k1.png" alt="세린"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 교주 / 20세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">청발, 창백한 피부, 단신</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 괴멸 (접촉 분자 단위 분해)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">치명적 파괴 능력. 절대적 오만함으로 광신도를 지휘함. 접근 엄금.</div></div>
+                    </div>
+                    
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">메리 (MARY)</h3><span class="dossier-code mono-font">ID-L</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/l1.png" alt="메리"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 예언자 / 19세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">은색 장발, 자안</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 미래 예지 (파편적)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">상시 몽환적인 상태. 광신적. 해당 인원으로 인해 토벌 다수 실패.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">미아 (MIA)</h3><span class="dossier-code mono-font">ID-M</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/m1.png" alt="미아"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 집행자 / 21세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">흑발, 회안, 눈 밑 균열 표식</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 붕괴 (내부 약화 타격)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">무표정하고 냉소적인 암살자. 방어구 무력화에 특화됨.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dossier-section border-indep stagger-item" style="animation-delay: 0.5s">
+                <h2 class="dossier-section-title text-theme mono-font">UNCLASSIFIED // WANDERERS</h2>
+                <div class="dossier-grid">
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">니아 (NIA)</h3><span class="dossier-code mono-font">ID-N</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/n1.png" alt="니아"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 탐험가 / 18세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">주황색 단발, 호박색 동공</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 탐지 (주변 개체 정밀 탐지)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">리나(ID-F)의 친동생. 소속을 거부하는 자유로운 영혼.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">하루 (HARU)</h3><span class="dossier-code mono-font">ID-O</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/o1.png" alt="하루"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 생존자 / 17세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">하늘색 머리, 실눈, 단신</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 척력 (물리적 밀어내기)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">외형과 달리 중년 남성 같은 털털한 화법과 행동.</div></div>
+                    </div>
+
+                    <div class="dossier-card">
+                        <div class="dossier-header"><h3 class="text-theme">임나 (IMNA)</h3><span class="dossier-code mono-font">ID-P</span></div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/p1.png" alt="임나"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">여 / 생존자 / 17세</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">분홍 트윈테일, 가죽자켓, 샷건</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ABILITY] 물체 정지 (운동에너지 제로화)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">비정상적일 정도로 활기차고 낙천적임. 산탄총 사격술이 뛰어남.</div></div>
+                    </div>
+                    
+                    <!-- 관찰자: 클릭 시 기밀 모달 호출 -->
+                    <div class="dossier-card dossier-error" onclick="openSecretModal()">
+                        <div class="dossier-header">
+                            <h3 class="text-theme">채유리 (YURI)</h3>
+                            <span class="dossier-code mono-font" style="background:var(--warning); color:#000;">ERR-Q</span>
+                        </div>
+                        <div class="dossier-main">
+                            <div class="dossier-portrait"><img src="images/q1.png" alt="채유리"></div>
+                            <div class="dossier-info">
+                                <div class="data-row"><div class="data-label">신상</div><div class="data-value">불명 / 관찰자 / 연령 미상</div></div>
+                                <div class="data-row"><div class="data-label">외형</div><div class="data-value">자발, 자안, 회색 후드, 작은 체구</div></div>
+                            </div>
+                        </div>
+                        <div class="ability-tag text-theme">[ANOMALY] 시간축 이동 (시공간 제약 무시)</div>
+                        <div class="data-row"><div class="data-label">노트</div><div class="data-value">
+                            "안녕? 너도 이 이야기가 어떻게 끝날지 궁금해서 온 거야?"<br><br>
+                            <strong>[시스템 경고]</strong> 추적 불가. 시스템 방화벽 무시 이력 다수. 상세 정보는 클릭하여 열람.
+                        </div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 채유리 이스터에그 모달 (기밀 보고서) -->
+    <div id="secret-modal">
+        <div class="secret-content mono-font">
+            <div class="secret-header">
+                <h2 class="glitch-anim">CLASSIFIED LEVEL 10 // ANOMALY-Q REPORT</h2>
+                <button class="close-btn" onclick="closeSecretModal()">[ X ]</button>
+            </div>
+            
+            <div class="report-meta">
+                DOCUMENT ID: X-77-OMEGA<br>
+                AUTHOR: PACOM INTEL DEPT. // CHIEF ANALYST<br>
+                SUBJECT: "CHAE YURI" (CODE: ERR-Q)
+            </div>
+
+            <div class="report-body" style="font-family: 'Noto Sans KR', sans-serif;">
+                <p><strong>[관찰 기록 개요]</strong><br>
+                본 개체는 대붕괴 이후 발현된 기존 이능력자들과 궤를 완전히 달리하는 미지의 존재다. 체내 안티 엔트로피 반응이 전혀 관측되지 않음에도 불구하고, 물리 법칙과 시공간의 제약을 완벽히 무시하며 나타나고 사라진다. 철저한 중립을 유지하며 어떤 진영의 분쟁에도 개입하지 않는다.</p>
+
+                <p><strong>[특이 현상 : 인지 외 대상과의 상호작용]</strong><br>
+                가장 경악스러운 것은 대상의 화법과 행동 양식이다. 요원들의 다수 목격담에 따르면, 대상은 종종 허공—혹은 어떤 광학 장비로도 관측되지 않는 특정 앵글—을 응시하며 누군가와 대화를 나눈다.</p>
+
+                <div class="report-quote glitch-anim">
+                    "안녕? 너도 이 이야기가 어떻게 끝날지 궁금해서 온 거야?"
+                </div>
+
+                <p>대상은 우리가 겪고 있는 이 끔찍한 아포칼립스와 참혹한 생존 투쟁을 마치 하나의 <span class="redacted">이야기(Story)</span>나 작품으로 인지하는 듯한 발언을 반복한다. 때로는 기록되지 않은 과거와 아직 결정되지 않은 미래의 사건을 '이미 읽어본 대본'처럼 가볍게 언급하곤 한다.</p>
+
+                <p>고대 연극에서 유래한 <strong>'제4의 벽(The Fourth Wall)'</strong>. 이 개념이 물리적으로 구현된 것인가? 대상은 우리 우주 내부의 존재가 아닐 확률이 높다. 본 아카이브 시스템의 5단계 군사 방화벽을 무시하고 데이터를 임의로 열람한 흔적 또한, 대상이 상위 차원(모니터 밖)에서 우리 시스템을 '들여다보고' 있다는 명백한 증거다.</p>
+
+                <p><strong>[대응 지침]</strong><br>
+                추적 불가. 관측 시 교전 및 접촉을 절대 엄금한다. 그녀는 이 세계의 멸망이나 구원에는 아무런 관심이 없는 '관찰자'일 뿐이다. 그녀의 심기를 거슬러 이 <span class="redacted">이야기</span>의 장르가 바뀌는 것을 원치 않는다면, 그저 지나가게 두어라.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 터미널 타이핑 연출 스크립트
+        const typeLines = [
+            "ESTABLISHING SECURE CONNECTION...",
+            "NATO PACIFIC COMMAND // CLASSIFIED TACTICAL ARCHIVE [YEAR: 2026]",
+            "<span style='color:var(--warning); font-weight:bold; text-shadow:0 0 10px rgba(255,42,42,0.5);'>WARNING: HIGH ANTI-ENTROPY LEVELS DETECTED IN SECTOR.</span>",
+            "VERIFYING CREDENTIALS... OK.",
+            "AUTHORIZED PERSONNEL ONLY."
+        ];
+        
+        let lineIndex = 0;
+        const typeContainer = document.getElementById('type-container');
+        const accessBtn = document.getElementById('btn-access');
+
+        function typeWriter() {
+            if (lineIndex < typeLines.length) {
+                const p = document.createElement('p');
+                p.innerHTML = typeLines[lineIndex];
+                p.style.opacity = '0';
+                typeContainer.appendChild(p);
+                
+                // 자연스러운 페이드인 연출
+                setTimeout(() => { p.style.opacity = '1'; }, 50);
+                
+                lineIndex++;
+                setTimeout(typeWriter, 500); // 0.5초 간격으로 다음 줄 출력
+            } else {
+                // 문장 출력이 다 끝나면 버튼 등장
+                setTimeout(() => {
+                    accessBtn.style.display = 'inline-block';
+                    accessBtn.animate([{opacity: 0}, {opacity: 1}], {duration: 500, iterations: 1});
+                }, 400);
+            }
+        }
+
+        // 페이지 로드 시 타이핑 시작
+        window.onload = () => { setTimeout(typeWriter, 400); };
+
+        // 접속 및 깔끔한 로딩바 연출
+        function enterArchive() {
+            const btn = document.getElementById('btn-access');
+            const decryptText = document.getElementById('decrypt-text');
+            const barContainer = document.getElementById('decrypt-bar-container');
+            const bar = document.getElementById('decrypt-bar');
+            
+            btn.style.display = 'none';
+            decryptText.style.display = 'block';
+            barContainer.style.display = 'block';
+            
+            // 로딩바 차오르는 연출
+            setTimeout(() => { bar.style.width = '100%'; }, 50);
+
+            // 로딩 완료 후 메인 시스템으로 화면 전환
+            setTimeout(() => {
+                const intro = document.getElementById('intro-screen');
+                const main = document.getElementById('main-container');
+                
+                intro.style.opacity = '0';
+                setTimeout(() => {
+                    intro.style.display = 'none';
+                    main.style.display = 'block';
+                    triggerStaggerAnim('tab-chronology');
+                }, 800);
+            }, 1200);
+        }
+
+        // 탭 전환 애니메이션 트리거
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+            triggerStaggerAnim(tabId);
+        }
+
+        // 요소들이 순차적으로 올라오는 효과
+        function triggerStaggerAnim(tabId) {
+            const items = document.querySelectorAll(`#${tabId} .stagger-item`);
+            items.forEach(item => {
+                item.style.animation = 'none';
+                item.offsetHeight; 
+                item.style.animation = null;
+            });
+        }
+
+        // 이스터에그 모달 제어
+        const modal = document.getElementById('secret-modal');
+        function openSecretModal() {
+            modal.style.display = 'flex';
+            setTimeout(() => { modal.style.opacity = '1'; }, 10);
+        }
+
+        function closeSecretModal() {
+            modal.style.opacity = '0';
+            setTimeout(() => { modal.style.display = 'none'; }, 400);
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeSecretModal();
+            }
+        }
+    </script>
+</body>
+</html>
